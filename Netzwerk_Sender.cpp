@@ -13,7 +13,7 @@ int main() {
 		ip::tcp::socket socket(IO); 
 		ip::tcp::endpoint endpoint(ip::address::from_string("127.0.0.1"), 1122); 
 
-		system("start C:\\Users\\kaiwa\\OneDrive\\Desktop\\Netzwerkschnittstelle\\Netzwerk_Empf‰nger\\Netzwerk_Empf‰nger");
+		system("Path\\Netzwerk_Empf√§nger");
 		this_thread::sleep_for(milliseconds(500));
 		cout << "start fertig" << endl;
 		this_thread::sleep_for(milliseconds(500));
@@ -32,6 +32,6 @@ int main() {
 		cout << "Empfangene Daten vom Sender: " << Data1 << endl;
 	}
 	catch (exception& Ausnahme) {
-		cout << "Empf‰nger Ausnahme: " << Ausnahme.what() << endl;
+		cout << "Empf√§nger Ausnahme: " << Ausnahme.what() << endl;
 	}
 }
