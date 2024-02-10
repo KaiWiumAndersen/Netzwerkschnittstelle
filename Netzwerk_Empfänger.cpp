@@ -1,62 +1,69 @@
 #include <iostream>
-#include <boost/asio.hpp>
-#include <vector>
-#include <iterator>
+#include <ws2tcpip.h>
+#include <thread>
+#include <winsock2.h>
+#include <chrono>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS 
+#pragma comment(lib, "ws2_32.lib")
 using namespace std;
-using namespace boost::asio;
+using namespace std::chrono;
 
-int main()
-{
-	vector<string>Nomen{ "Hund", "Katze", "Haus", "Auto", "Hammer", "Programmiersprache", "Computerprogramm" };
-	vector<string>Verben{ "programmieren, " "debuggen, " "lesen, " "schlagen, " "klicken, " "springen, " };
-	vector<string>Abjektive{ "groß", "klein", "gut", "schlecht", "weich", "hart" };
-	vector<string>Präposition{ "hinter", "vor", "unter", "über", "rechts", "links", "in", "außerhalb" };
-	vector<string>Konjunktion{ "weil", "und", "aber", "ober", "obwohl" };
-
-	try {
-		io_service IO;
-		ip::tcp::socket socket(IO);
-		ip::tcp::acceptor acceptor(IO, ip::tcp::endpoint(ip::tcp::v4(), 1122));
-
-		while (true) {
-			ip::tcp::socket socket(IO);
-			acceptor.accept(socket);
-
-			char Daten[1024];
-			size_t Programm2 = socket.read_some(buffer(Daten));
-			string DatenSender(Daten, Programm2);
-
-			write(socket, buffer("Hallo Empfänger"));
-			write(socket, buffer("Wie geht es dir?"));
-
-			if (DatenSender == "Nomen") {
-				for (string& Noun : Nomen) {
-					write(socket, buffer(Noun));
-				}
-			}
-			else if (DatenSender == "Verben") {
-				for (string& Verbs : Verben) {
-					write(socket, buffer(Verbs));
-				}
-			}
-			else if (DatenSender == "Abjektive") {
-				for (string& Abjektiv : Abjektive) {
-					write(socket, buffer(Abjektiv));
-				}
-			}
-			else if (DatenSender == "Präposition") {
-				for (string& Präpositions : Präposition) {
-					write(socket, buffer(Präpositions));
-				}
-			}
-			else if (DatenSender == "Konjuktionen") {
-				for (string& Conjunktions : Konjunktion) {
-					write(socket, buffer(Conjunktions));
-				}
-			}
-		}
+int main() {
+	WSADATA WD;
+	if (WSAStartup(MAKEWORD(2, 2), &WD) != 0) {
+		cout << "WSAStartup ist fehlgeschlagen: " << WSAGetLastError() << endl;
+		return 1;
 	}
-	catch (exception& Ausnahme) {
-		cout << "Ausnahme: " << Ausnahme.what() << endl;
+	SOCKET Socket1 = socket(AF_INET, SOCK_STREAM, 0);
+
+	if (Socket1 == INVALID_SOCKET) {
+		cout << "Schlechter Socket: " << WSAGetLastError() << endl;
+		WSACleanup();
+		return 1;
 	}
+	else {
+		cout << "Guter Socket" << endl;
+	}
+
+	sockaddr_in ServerAdress;
+	ServerAdress.sin_family = AF_INET;
+	ServerAdress.sin_port = htons(4444);
+	if (inet_pton(AF_INET, "127.0.0.1", &(ServerAdress.sin_addr)) <= 0) {
+		cout << "fehlerhafte IP-Adresse: " << WSAGetLastError() << endl;
+	}
+	else {
+		cout << "erfolgreiche IP-Adresse" << endl;
+	}
+	if (bind(Socket1, (struct sockaddr*)&ServerAdress, sizeof(ServerAdress)) == SOCKET_ERROR) {
+		cout << "Fehler beim Binden: " << WSAGetLastError() << endl;
+		closesocket(Socket1);
+		WSACleanup();
+	}
+	else {
+		cout << "Das Binden war erfolgreich" << endl;
+	}
+	if (listen(Socket1, SOMAXCONN) == SOCKET_ERROR) {
+		cout << "Fehler beim AbhÃ¶ren: " << WSAGetLastError() << endl;
+		closesocket(Socket1);
+		WSACleanup();
+		return 1;
+	}
+	else {
+		cout << "AbhÃ¶ren war erfolgreich" << endl;
+	}
+	this_thread::sleep_for(milliseconds(4000));
+	char Buffer[4096];
+	memset(Buffer, 0, sizeof(Buffer));
+	int BytesRead = recv(Socket1, Buffer, sizeof(Buffer), 0);
+	if (BytesRead == SOCKET_ERROR) {
+		cout << "Fehler beim Empfangen der Daten: " << WSAGetLastError() << endl;
+	}
+	else if (BytesRead == 0) {
+		cout << "Verbindung geschlossen: " << WSAGetLastError() << endl;
+	}
+	else {
+		cout << Buffer << endl;
+	}
+	closesocket(Socket1);
+	WSACleanup();
 }
